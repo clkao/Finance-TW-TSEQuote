@@ -5,7 +5,7 @@ WriteMakefile(
     AUTHOR		=> 'Chia-liang Kao (clkao@clkao.org)',
     ABSTRACT		=> 'Check stock quotes from Taiwan Securities Exchange with Perl',
     NAME		=> 'Finance::TW::TSEQuote',
-    VERSION_FROM	=> 'TSEQuote.pm',
+    VERSION_FROM	=> 'lib/Finance/TW/TSEQuote.pm',
     DISTNAME		=> 'Finance-TW-TSEQuote',
     PREREQ_PM		=> {
 	'LWP::Simple'	=> 0,
