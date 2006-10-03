@@ -42,14 +42,24 @@ sub new {
     return $self;
 }
 
-sub get {
-    my $self = shift if ref($_[0]) eq __PACKAGE__;
-    shift if $_[0] eq __PACKAGE__;
-    my $stockno = $self ? $self->{id} : shift;
-    my $content = LWP::Simple::get("http://mis.tse.com.tw/Quotes/Best5?StkNo=$stockno");
-    my $result;
+no utf8;
+no encoding;
 
-    undef $self->{quote} if $self;
+sub get {
+    my $self = shift;
+    my $stockno = ref $self ? $self->{id} : shift;
+    my $content = LWP::Simple::get("http://mis.tse.com.tw/Quotes/Best5?StkNo=$stockno");
+    from_to($content, 'big5', 'utf-8');
+
+    my $result;
+    my ($time) = $content =~ m/揭示時間:\s*([\d:]+)/;
+    my ($name) = $content =~ m/>\Q$stockno\E(.*?)</;
+    $self->{name} ||= $name if ref $self;
+    $name =~ s/\s//g;
+
+    $result->{time} = $time;
+    $result->{name} = $name;
+    undef $self->{quote} if ref $self;
 
     while ($content =~ s/id="(\w+)"\>(?:<font.*?\/font>)?(.*?)\<//) {
 	my ($key, $value) = ($1, $2);
@@ -62,7 +72,7 @@ sub get {
 	}
     }
 
-    $self->{quote} = $result if $self;
+    $self->{quote} = $result if ref $self;
 
     return $result;
 }
