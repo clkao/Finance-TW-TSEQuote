@@ -1,5 +1,5 @@
 package Finance::TW::TSEQuote;
-$VERSION = '0.2';
+$VERSION = '0.25';
 
 use strict;
 use LWP::Simple ();

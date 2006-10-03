@@ -1,0 +1,4 @@
+[Changes for 0.25 - 3 Oct 2006]
+
+* Add time and symbol to quote results.
+* Extract postive/negative net properly.
