@@ -61,7 +61,7 @@ sub get {
     $result->{name} = $name;
     undef $self->{quote} if ref $self;
 
-    while ($content =~ s/id="(\w+)"\>(?:<font.*?\/font>)?(.*?)\<//) {
+    while ($content =~ s/id="(\w+)"\>(?:<font.*?>)?(.*?)(?:<\/font>)?\<//) {
 	my ($key, $value) = ($1, $2);
 	$value = '' if $value eq '&nbsp';
 	if ($key =~ m/(Buy|Sell)(\w+)(\d)/) {
@@ -71,7 +71,7 @@ sub get {
 	    $result->{$1} = $2;
 	}
     }
-
+    $result->{UpDown} = -$result->{UpDown} if $result->{UpDownMark} eq '－';
     $self->{quote} = $result if ref $self;
 
     return $result;
@@ -164,3 +164,4 @@ under the same terms as Perl itself.
 See L<http://www.perl.com/perl/misc/Artistic.html>
 
 =cut
+
