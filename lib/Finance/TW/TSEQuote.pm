@@ -52,12 +52,13 @@ sub get {
     from_to($content, 'big5', 'utf-8');
 
     my $result;
-    $content =~ s/"//g;
+    $content =~ s/["\n\r]//g;
     my @info = split /,/, $content;
     my $cmap = [undef, 'UpDown', 'time', 'UpPrice', 'DownPrice', 'OpenPrice',
 		'HighPrice', 'LowPrice', 'MatchPrice', 'MatchQty', 'DQty'];
     $result->{$cmap->[$_]} = $info[$_] foreach (0..10);
     $result->{name} = $info[32];
+    $result->{name} =~ s/\s//g;
     $self->{name} ||= $result->{name} if ref $self;
 
     if ($result->{MatchPrice} == $result->{UpPrice}) {
@@ -75,6 +76,8 @@ sub get {
 
     $result->{Bid}{Buy}[$_]{$info[11+$_*2]} = $info[12+$_*2] foreach (0..4);
     $result->{Bid}{Sell}[$_]{$info[21+$_*2]} = $info[22+$_*2] foreach (0..4);
+    $result->{BuyPrice} = $info[11];
+    $result->{SellPrice} = $info[21];
 
     $self->{quote} = $result if ref $self;
 
