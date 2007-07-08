@@ -7,6 +7,7 @@ WriteMakefile(
     NAME		=> 'Finance::TW::TSEQuote',
     VERSION_FROM	=> 'lib/Finance/TW/TSEQuote.pm',
     DISTNAME		=> 'Finance-TW-TSEQuote',
+    EXE_FILES		=> ['scripts/pfq'],
     PREREQ_PM		=> {
 	'LWP::Simple'	=> 0,
 	'URI::Escape'	=> 0,
