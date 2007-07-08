@@ -1,5 +1,5 @@
 package Finance::TW::TSEQuote;
-$VERSION = '0.26';
+$VERSION = '0.27';
 
 use strict;
 use LWP::Simple ();
@@ -48,30 +48,34 @@ no encoding;
 sub get {
     my $self = shift;
     my $stockno = ref $self ? $self->{id} : shift;
-    my $content = LWP::Simple::get("http://mis.tse.com.tw/Quotes/Best5?StkNo=$stockno");
+    my $content = LWP::Simple::get("http://mis.tse.com.tw/data/$stockno.csv");
     from_to($content, 'big5', 'utf-8');
 
     my $result;
-    my ($time) = $content =~ m/揭示時間:\s*([\d:]+)/;
-    my ($name) = $content =~ m/>\Q$stockno\E(.*?)</;
-    $self->{name} ||= $name if ref $self;
-    $name =~ s/\s//g;
+    $content =~ s/"//g;
+    my @info = split /,/, $content;
+    my $cmap = [undef, 'UpDown', 'time', 'UpPrice', 'DownPrice', 'OpenPrice',
+		'HighPrice', 'LowPrice', 'MatchPrice', 'MatchQty', 'DQty'];
+    $result->{$cmap->[$_]} = $info[$_] foreach (0..10);
+    $result->{name} = $info[32];
+    $self->{name} ||= $result->{name} if ref $self;
 
-    $result->{time} = $time;
-    $result->{name} = $name;
-    undef $self->{quote} if ref $self;
-
-    while ($content =~ s/id="(\w+)"\>(?:<font.*?>)?(.*?)(?:<\/font>)?\<//) {
-	my ($key, $value) = ($1, $2);
-	$value = '' if $value eq '&nbsp';
-	if ($key =~ m/(Buy|Sell)(\w+)(\d)/) {
-	    $result->{Bid}{$1}[$3-1]{$2} = $value;# if $value;
-	}
-	else {
-	    $result->{$1} = $2;
-	}
+    if ($result->{MatchPrice} == $result->{UpPrice}) {
+	$result->{UpDownMark} = '♁';
     }
-    $result->{UpDown} = -$result->{UpDown} if $result->{UpDownMark} eq '－';
+    elsif ($result->{MatchPrice} == $result->{DownPrice}) {
+	$result->{UpDownMark} = '?';
+    }
+    elsif ($result->{UpDown} > 0) {
+	$result->{UpDownMark} = '＋';
+    }
+    elsif ($result->{UpDown} < 0) {
+	$result->{UpDownMark} = '－';
+    }
+
+    $result->{Bid}{Buy}[$_]{$info[11+$_*2]} = $info[12+$_*2] foreach (0..4);
+    $result->{Bid}{Sell}[$_]{$info[21+$_*2]} = $info[22+$_*2] foreach (0..4);
+
     $self->{quote} = $result if ref $self;
 
     return $result;
