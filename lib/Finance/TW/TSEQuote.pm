@@ -16,7 +16,8 @@ sub resolve {
 
     $name = uri_escape($name);
 
-    my $content = LWP::Simple::get("http://mops.tse.com.tw/server-java/t05st49_1?step=1&kinds=sii&colorchg=1&type=01&nick_name=$name");
+#    my $content = LWP::Simple::get("http://mops.tse.com.tw/server-java/t05st49_1?step=1&kinds=sii&colorchg=1&type=01&nick_name=$name");
+    my $content = LWP::Simple::get("http://mops.twse.com.tw/mops/web/ajax_quickpgm?encodeURIComponent=1&firstin=true&step=4&checkbtn=1&queryName=co_id&TYPEK2=&code1=&keyword4=$name");
 
     my ($id, $fullname, $engname) = $content =~ m|<td>(\d+)&nbsp;</td><td>(.*?)&nbsp;</td><td>(.*?)&nbsp;</td></tr>|;
 
@@ -48,7 +49,7 @@ no encoding;
 sub get {
     my $self = shift;
     my $stockno = ref $self ? $self->{id} : shift;
-    my $content = LWP::Simple::get("http://mis.tse.com.tw/data/$stockno.csv");
+    my $content = LWP::Simple::get("http://mis.twse.com.tw/data/$stockno.csv");
     from_to($content, 'big5', 'utf-8');
 
     my $result;
@@ -84,6 +85,53 @@ sub get {
     return $result;
 }
 
+sub fetchMarketFile{
+    my $self = shift if ref($_[0]) eq __PACKAGE__;
+    shift if $_[0] eq __PACKAGE__;
+	my($stock, $year, $month) = @_;
+	my @fields = ();
+	my ($i, $url, $file, $arg, $outfile);
+
+	$month = "0".$month if $month < 10;
+	$url = "http://www.twse.com.tw/ch/trading/exchange/STOCK_DAY/genpage/Report" . $year . $month . "/";
+	$file = $year . $month . "_F3_1_8_" . $stock . ".php?STK_NO=" . $stock ;
+	$arg = "&myear=" . $year . "&mmon=" . $month;
+	my $content = LWP::Simple::get("$url$file$arg");
+	my $result;
+
+	if($content){
+		if ($content =~ /<tr bgcolor='#F7F0E8'>(.+)/){
+			$content = $1;
+			$content =~ s/<table(.)*?>/ /g;
+			$content =~ s/<tr(.)*?>/ /g;
+			$content =~ s/<td(.)*?>/ /g;
+			$content =~ s/<\/tr(.)*?>/ /g;
+			$content =~ s/<\/td(.)*?>/ /g;
+			$content =~ s/<div(.)*?>/ /g;
+			$content =~ s/<\/div(.)*?>/ /g;
+			$content =~ s/&nbsp;/ /g;
+			$content =~ s/.*µ§¼Æ\s*//;
+			$content =~ s/\s+/ /g;
+			$content =~ s/,//g;
+			@fields = split / /, $content;
+			for ($i = 18; $i <= $#fields; $i += 9){
+				my $date = $fields[$i - 3];
+				my ($yy, $mm, $dd) = split /\//,$date;
+				$fields[$i - 3] = (1911+$yy)."-".$mm."-".$dd if $mm;
+
+				$result .=
+					$fields[$i] . "\t" .
+					$fields[$i + 1] . "\t" .
+					$fields[$i + 2] . "\t" .
+					$fields[$i + 3] . "\t" .
+					$fields[$i + 5] . "\t" .
+					$fields[$i - 3]. "\n";
+
+			}
+		}
+	}
+	return $result;
+}
 
 1;
 
