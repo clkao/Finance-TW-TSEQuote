@@ -8,25 +8,40 @@ eval { require 'Encode::compat' };
 use Encode 'from_to';
 use URI::Escape;
 
+sub updateNameSymbol {
+    my $self = shift if ref($_[0]) eq __PACKAGE__;
+    shift if $_[0] eq __PACKAGE__;
+    my $tmp = "/tmp/tswe-stock-symbol.txt";
+    my $url = "http://brk.twse.com.tw:8000/isin/C_public.jsp?strMode=2";
+    my $rc = LWP::Simple::getstore($url => $tmp);
+    die("failed to fetch $url: $rc")
+        if HTTP::Status::is_error($rc);
+}
+
 sub resolve {
     my $self = shift if ref($_[0]) eq __PACKAGE__;
     shift if $_[0] eq __PACKAGE__;
     my $name = shift;
+    my $tmp = "/tmp/tswe-stock-symbol.txt";
 
-    from_to($name, 'utf-8', 'big5');
+    unless (-s $tmp) {
+        $self->updateNameSymbol;
+    }
+    #from_to($name, 'utf-8', 'big5');
 
-    $name = uri_escape($name);
+#    $name = uri_escape($name);
 
 #    my $content = LWP::Simple::get("http://mops.tse.com.tw/server-java/t05st49_1?step=1&kinds=sii&colorchg=1&type=01&nick_name=$name");
-    my $content = LWP::Simple::get("http://mops.twse.com.tw/mops/web/ajax_quickpgm?encodeURIComponent=1&firstin=true&step=4&checkbtn=1&queryName=co_id&TYPEK2=&code1=&keyword4=$name");
+#    my $content = LWP::Simple::get("http://mops.twse.com.tw/mops/web/ajax_quickpgm?encodeURIComponent=1&firstin=true&step=4&checkbtn=1&queryName=co_id&TYPEK2=&code1=&keyword4=$name");
+    open my $fh, '<', $tmp;
+    my $content = do { local $/; <$fh> };
+    from_to($content, 'big5', 'utf-8');
 
-    my ($id, $fullname, $engname) = $content =~ m|<td>(\d+)&nbsp;</td><td>(.*?)&nbsp;</td><td>(.*?)&nbsp;</td></tr>|;
+    my ($id) = $content =~ m|<td bgcolor=[^>]+>(\d+)\s+\xe3\x80\x80$name</td>|;
 
     die "can't resolve symbol: $name" unless $id;
 
-    from_to($fullname, 'big5', 'utf-8');
-
-    @{$self}{qw/id fullname engname/} = ($id, $fullname, $engname);
+    @{$self}{qw/id/} = ($id);
 
     return $id;
 
@@ -163,9 +178,18 @@ symbol, as well as getting the real time quote.
     Create a stock quote object. Resolve the name to symbol
     if the argument is not a symbol.
 
+=item updateNameSymbol
+
+    Update the company name <-> stock symbol cache
+
 =item resolve
 
     Resolve the company name to stock symbol.
+
+=item fetchMarketFile
+
+    Fetch the Een-Of-Day stock information for specific company
+	by year and month.
 
 =item get
 
