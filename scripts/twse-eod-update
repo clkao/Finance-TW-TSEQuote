@@ -5,7 +5,7 @@ use Finance::TW::TSEQuote;
 use File::Temp;
 
 my $product = shift || '0050';
-my $dir = 'daily';
+my $dir = shift || 'daily';
 mkdir($dir);
 
 my $quote = Finance::TW::TSEQuote->new($product);
