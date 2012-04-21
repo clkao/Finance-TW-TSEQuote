@@ -1,4 +1,5 @@
 package Finance::TW::TSEQuote;
+use 5.10.1;
 $VERSION = '0.27';
 
 use strict;

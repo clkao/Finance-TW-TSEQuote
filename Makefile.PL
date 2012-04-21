@@ -1,23 +1,14 @@
-#!/usr/bin/perl
-use ExtUtils::MakeMaker;
+use inc::Module::Install;
+name 'Finance-TW-TSEQuote';
+all_from 'lib/Finance/TW/TSEQuote.pm';
+readme_from 'lib/Finance/TW/TSEQuote.pm';
+build_requires 'Test::More' => 0.88;
+extra_tests;
+auto_set_repository;
 
-WriteMakefile(
-    AUTHOR		=> 'Chia-liang Kao (clkao@clkao.org)',
-    ABSTRACT		=> 'Check stock quotes from Taiwan Securities Exchange with Perl',
-    NAME		=> 'Finance::TW::TSEQuote',
-    VERSION_FROM	=> 'lib/Finance/TW/TSEQuote.pm',
-    DISTNAME		=> 'Finance-TW-TSEQuote',
-    EXE_FILES		=> ['scripts/pfq'],
-    PREREQ_PM		=> {
-	'LWP::Simple'	=> 0,
-	'URI::Escape'	=> 0,
-	($] < 5.008 ?
-	 ('Encode::compat' => 0) : ())
-    },
+install_script glob('scripts/*');
 
-    dist		=> {
-        COMPRESS	=> 'gzip -9',
-        SUFFIX		=> '.gz',
-    },
-);
+requires 'LWP::Simple';
+requires 'URI::Escape';
 
+WriteAll;
