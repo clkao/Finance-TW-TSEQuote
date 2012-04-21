@@ -96,43 +96,40 @@ sub fetchMarketFile{
 	$url = "http://www.twse.com.tw/ch/trading/exchange/STOCK_DAY/genpage/Report" . $year . $month . "/";
 	$file = $year . $month . "_F3_1_8_" . $stock . ".php?STK_NO=" . $stock ;
 	$arg = "&myear=" . $year . "&mmon=" . $month;
-	`curl -O $url$file$arg`;
-	#$outfile = $stock . "_" . $year . "_" . $month;
+	my $content = LWP::Simple::get("$url$file$arg");
 	my $result;
 
-	open FD, "<$file";
-	while(<FD>){
-		if (/<tr bgcolor='#F7F0E8'>/){
-			s/<table(.)*?>/ /g;
-			s/<tr(.)*?>/ /g;
-			s/<td(.)*?>/ /g;
-			s/<\/tr(.)*?>/ /g;
-			s/<\/td(.)*?>/ /g;
-			s/<div(.)*?>/ /g;
-			s/<\/div(.)*?>/ /g;
-			s/&nbsp;/ /g;
-			s/.*µ§¼Æ\s*//;
-			s/\s+/ /g;
-			s/,//g;
-			@fields = split / /;
+	if($content){
+		if ($content =~ /<tr bgcolor='#F7F0E8'>(.+)/){
+			$content = $1;
+			$content =~ s/<table(.)*?>/ /g;
+			$content =~ s/<tr(.)*?>/ /g;
+			$content =~ s/<td(.)*?>/ /g;
+			$content =~ s/<\/tr(.)*?>/ /g;
+			$content =~ s/<\/td(.)*?>/ /g;
+			$content =~ s/<div(.)*?>/ /g;
+			$content =~ s/<\/div(.)*?>/ /g;
+			$content =~ s/&nbsp;/ /g;
+			$content =~ s/.*µ§¼Æ\s*//;
+			$content =~ s/\s+/ /g;
+			$content =~ s/,//g;
+			@fields = split / /, $content;
 			for ($i = 18; $i <= $#fields; $i += 9){
 				my $date = $fields[$i - 3];
 				my ($yy, $mm, $dd) = split /\//,$date;
 				$fields[$i - 3] = (1911+$yy)."-".$mm."-".$dd if $mm;
 
 				$result .=
-					$fields[$i] . "\t" . 
-					$fields[$i + 1] . "\t" . 
-					$fields[$i + 2] . "\t" . 
-					$fields[$i + 3] . "\t" . 
+					$fields[$i] . "\t" .
+					$fields[$i + 1] . "\t" .
+					$fields[$i + 2] . "\t" .
+					$fields[$i + 3] . "\t" .
 					$fields[$i + 5] . "\t" .
 					$fields[$i - 3]. "\n";
 
 			}
 		}
 	}
-	close FD;
-	`rm $file`;
 	return $result;
 }
 
