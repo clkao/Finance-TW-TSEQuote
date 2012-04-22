@@ -10,5 +10,6 @@ install_script glob('scripts/*');
 
 requires 'LWP::Simple';
 requires 'URI::Escape';
+requires 'App::Cache';
 
 WriteAll;

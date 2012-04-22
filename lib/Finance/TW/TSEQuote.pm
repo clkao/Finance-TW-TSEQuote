@@ -7,34 +7,23 @@ use LWP::Simple ();
 eval { require 'Encode::compat' };
 use Encode 'from_to';
 use URI::Escape;
-
-sub updateNameSymbol {
-    my $self = shift if ref($_[0]) eq __PACKAGE__;
-    shift if $_[0] eq __PACKAGE__;
-    my $tmp = "/tmp/tswe-stock-symbol.txt";
-    my $url = "http://brk.twse.com.tw:8000/isin/C_public.jsp?strMode=2";
-    my $rc = LWP::Simple::getstore($url => $tmp);
-    die("failed to fetch $url: $rc")
-        if HTTP::Status::is_error($rc);
-}
+use App::Cache;
 
 sub resolve {
     my $self = shift if ref($_[0]) eq __PACKAGE__;
     shift if $_[0] eq __PACKAGE__;
     my $name = shift;
     my $tmp = "/tmp/tswe-stock-symbol.txt";
+    $self->{cache} ||= App::Cache->new({ ttl => 7*24*60*60 }); # a week
 
-    unless (-s $tmp) {
-        $self->updateNameSymbol;
-    }
+    my $url = "http://brk.twse.com.tw:8000/isin/C_public.jsp?strMode=2";
+	my $content = $self->{cache}->get_url($url);
     #from_to($name, 'utf-8', 'big5');
 
 #    $name = uri_escape($name);
 
 #    my $content = LWP::Simple::get("http://mops.tse.com.tw/server-java/t05st49_1?step=1&kinds=sii&colorchg=1&type=01&nick_name=$name");
 #    my $content = LWP::Simple::get("http://mops.twse.com.tw/mops/web/ajax_quickpgm?encodeURIComponent=1&firstin=true&step=4&checkbtn=1&queryName=co_id&TYPEK2=&code1=&keyword4=$name");
-    open my $fh, '<', $tmp;
-    my $content = do { local $/; <$fh> };
     from_to($content, 'big5', 'utf-8');
 
     my ($id) = $content =~ m|<td bgcolor=[^>]+>(\d+)\s+\xe3\x80\x80$name</td>|;
@@ -177,10 +166,6 @@ symbol, as well as getting the real time quote.
 
     Create a stock quote object. Resolve the name to symbol
     if the argument is not a symbol.
-
-=item updateNameSymbol
-
-    Update the company name <-> stock symbol cache
 
 =item resolve
 
