@@ -13,9 +13,9 @@ sub resolve {
     my $self = shift;
     $self = bless {}, __PACKAGE__ unless ref($self) eq __PACKAGE__;
     my $name = shift;
-    $self->{cache} ||= App::Cache->new({ ttl => 7*24*60*60 }); # a week
+    $self->{cache} ||= App::Cache->new({ ttl => 7 * 24 * 60 * 60 });  # a week
     my $cache = $self->{cache};
-    my $key = md5_hex($name);
+    my $key   = md5_hex($name);
 
     unless ($cache->get($key)) {
         my $url = "http://brk.twse.com.tw:8000/isin/C_public.jsp?strMode=2";
@@ -23,14 +23,17 @@ sub resolve {
 
         from_to($content, 'big5', 'utf-8');
         use HTML::TableExtract;
-        my $te = HTML::TableExtract->new( headers => [qw(證券代號及名稱 上市日)] );
+        my $te = HTML::TableExtract->new(
+                            headers => [qw(證券代號及名稱 上市日)]);
         $te->parse($content);
         foreach my $ts ($te->tables) {
             foreach my $row ($ts->rows) {
-                my ($symbol, $company) = $row->[0] =~ m|(\S+)\s+\xe3\x80\x80(.*?)$|o;
+                my ($symbol, $company)
+                    = $row->[0] =~ m|(\S+)\s+\xe3\x80\x80(.*?)$|o;
                 next unless $symbol;
                 my $board_date = $row->[1];
-                $cache->set(md5_hex($company), {id => $symbol, date => $board_date});
+                $cache->set(md5_hex($company),
+                            { id => $symbol, date => $board_date });
             }
         }
     }
@@ -49,7 +52,7 @@ sub new {
     my $self = bless {}, $class;
 
     $self->resolve($target)
-	unless $target =~ /^\d+$/;
+        unless $target =~ /^\d+$/;
 
     $self->{id} ||= $target;
 
@@ -62,35 +65,36 @@ no encoding;
 sub get {
     my $self = shift;
     my $stockno = ref $self ? $self->{id} : shift;
-    my $content = LWP::Simple::get("http://mis.twse.com.tw/data/$stockno.csv");
+    my $content
+        = LWP::Simple::get("http://mis.twse.com.tw/data/$stockno.csv");
     from_to($content, 'big5', 'utf-8');
 
     my $result;
     $content =~ s/["\n\r]//g;
     my @info = split /,/, $content;
-    my $cmap = [undef, 'UpDown', 'time', 'UpPrice', 'DownPrice', 'OpenPrice',
-		'HighPrice', 'LowPrice', 'MatchPrice', 'MatchQty', 'DQty'];
-    $result->{$cmap->[$_]} = $info[$_] foreach (0..10);
+    my $cmap = [ undef,        'UpDown',    'time',      'UpPrice',
+                 'DownPrice',  'OpenPrice', 'HighPrice', 'LowPrice',
+                 'MatchPrice', 'MatchQty',  'DQty' ];
+    $result->{ $cmap->[$_] } = $info[$_] foreach (0 .. 10);
     $result->{name} = $info[32];
     $result->{name} =~ s/\s//g;
     $self->{name} ||= $result->{name} if ref $self;
 
     if ($result->{MatchPrice} == $result->{UpPrice}) {
-	$result->{UpDownMark} = '♁';
-    }
-    elsif ($result->{MatchPrice} == $result->{DownPrice}) {
-	$result->{UpDownMark} = '?';
-    }
-    elsif ($result->{UpDown} > 0) {
-	$result->{UpDownMark} = '＋';
-    }
-    elsif ($result->{UpDown} < 0) {
-	$result->{UpDownMark} = '－';
+        $result->{UpDownMark} = '♁';
+    } elsif ($result->{MatchPrice} == $result->{DownPrice}) {
+        $result->{UpDownMark} = '?';
+    } elsif ($result->{UpDown} > 0) {
+        $result->{UpDownMark} = '＋';
+    } elsif ($result->{UpDown} < 0) {
+        $result->{UpDownMark} = '－';
     }
 
-    $result->{Bid}{Buy}[$_]{$info[11+$_*2]} = $info[12+$_*2] foreach (0..4);
-    $result->{Bid}{Sell}[$_]{$info[21+$_*2]} = $info[22+$_*2] foreach (0..4);
-    $result->{BuyPrice} = $info[11];
+    $result->{Bid}{Buy}[$_]{ $info[ 11 + $_ * 2 ] } = $info[ 12 + $_ * 2 ]
+        foreach (0 .. 4);
+    $result->{Bid}{Sell}[$_]{ $info[ 21 + $_ * 2 ] } = $info[ 22 + $_ * 2 ]
+        foreach (0 .. 4);
+    $result->{BuyPrice}  = $info[11];
     $result->{SellPrice} = $info[21];
 
     $self->{quote} = $result if ref $self;
@@ -98,51 +102,56 @@ sub get {
     return $result;
 }
 
-sub fetchMarketFile{
-	my $self = shift;
-	my($stock, $year, $month) = @_;
-	my @fields = ();
-	my ($i, $url, $file, $arg, $outfile);
+sub fetchMarketFile {
+    my $self = shift;
+    my ($stock, $year, $month) = @_;
+    my @fields = ();
+    my ($i, $url, $file, $arg, $outfile);
 
-	$month = "0".$month if $month < 10;
-	$url = "http://www.twse.com.tw/ch/trading/exchange/STOCK_DAY/genpage/Report" . $year . $month . "/";
-	$file = $year . $month . "_F3_1_8_" . $stock . ".php?STK_NO=" . $stock ;
-	$arg = "&myear=" . $year . "&mmon=" . $month;
-	my $content = LWP::Simple::get("$url$file$arg");
-	my $result;
+    $month = "0" . $month if $month < 10;
+    $url
+        = "http://www.twse.com.tw/ch/trading/exchange/STOCK_DAY/genpage/Report"
+        . $year
+        . $month . "/";
+    $file = $year . $month . "_F3_1_8_" . $stock . ".php?STK_NO=" . $stock;
+    $arg  = "&myear=" . $year . "&mmon=" . $month;
+    my $content = LWP::Simple::get("$url$file$arg");
+    my $result;
 
-	if($content){
-		if ($content =~ /<tr bgcolor='#F7F0E8'>(.+)/){
-			$content = $1;
-			$content =~ s/<table(.)*?>/ /g;
-			$content =~ s/<tr(.)*?>/ /g;
-			$content =~ s/<td(.)*?>/ /g;
-			$content =~ s/<\/tr(.)*?>/ /g;
-			$content =~ s/<\/td(.)*?>/ /g;
-			$content =~ s/<div(.)*?>/ /g;
-			$content =~ s/<\/div(.)*?>/ /g;
-			$content =~ s/&nbsp;/ /g;
-			$content =~ s/.*µ§¼Æ\s*//;
-			$content =~ s/\s+/ /g;
-			$content =~ s/,//g;
-			@fields = split / /, $content;
-			for ($i = 18; $i <= $#fields; $i += 9){
-				my $date = $fields[$i - 3];
-				my ($yy, $mm, $dd) = split /\//,$date;
-				$fields[$i - 3] = (1911+$yy)."-".$mm."-".$dd if $mm;
+    if ($content) {
+        if ($content =~ /<tr bgcolor='#F7F0E8'>(.+)/) {
+            $content = $1;
+            $content =~ s/<table(.)*?>/ /g;
+            $content =~ s/<tr(.)*?>/ /g;
+            $content =~ s/<td(.)*?>/ /g;
+            $content =~ s/<\/tr(.)*?>/ /g;
+            $content =~ s/<\/td(.)*?>/ /g;
+            $content =~ s/<div(.)*?>/ /g;
+            $content =~ s/<\/div(.)*?>/ /g;
+            $content =~ s/&nbsp;/ /g;
+            $content =~ s/.*µ§¼Æ\s*//;
+            $content =~ s/\s+/ /g;
+            $content =~ s/,//g;
+            @fields = split / /, $content;
 
-				$result .=
-					$fields[$i] . "\t" .
-					$fields[$i + 1] . "\t" .
-					$fields[$i + 2] . "\t" .
-					$fields[$i + 3] . "\t" .
-					$fields[$i + 5] . "\t" .
-					$fields[$i - 3]. "\n";
+            for ($i = 18; $i <= $#fields; $i += 9) {
+                my $date = $fields[ $i - 3 ];
+                my ($yy, $mm, $dd) = split /\//, $date;
+                $fields[ $i - 3 ] = (1911 + $yy) . "-" . $mm . "-" . $dd
+                    if $mm;
 
-			}
-		}
-	}
-	return $result;
+                $result
+                    .= $fields[$i] . "\t"
+                    . $fields[ $i + 1 ] . "\t"
+                    . $fields[ $i + 2 ] . "\t"
+                    . $fields[ $i + 3 ] . "\t"
+                    . $fields[ $i + 5 ] . "\t"
+                    . $fields[ $i - 3 ] . "\n";
+
+            }
+        }
+    }
+    return $result;
 }
 
 1;
