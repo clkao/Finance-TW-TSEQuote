@@ -1,8 +1,8 @@
 package Finance::TW::TSEQuote;
 use 5.10.1;
-$VERSION = '0.27';
-
 use strict;
+our $VERSION = '0.28';
+
 use LWP::Simple ();
 use Encode 'from_to';
 use URI::Escape;
@@ -235,9 +235,11 @@ symbol, as well as getting the real time quote.
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
+Cheng-Lung Sung
+
 =head1 COPYRIGHT
 
-Copyright 2003 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2012 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

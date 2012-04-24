@@ -21,6 +21,10 @@ CLASS METHODS
     resolve
             Resolve the company name to stock symbol.
 
+    fetchMarketFile
+            Fetch the Een-Of-Day stock information for specific company
+                by year and month.
+
     get
             Get the real time stock information.
             Return a hash containing stock information. The keys are:
@@ -49,8 +53,10 @@ CLASS METHODS
 AUTHORS
     Chia-liang Kao <clkao@clkao.org>
 
+    Cheng-Lung Sung
+
 COPYRIGHT
-    Copyright 2003 by Chia-liang Kao <clkao@clkao.org>.
+    Copyright 2003-2012 by Chia-liang Kao <clkao@clkao.org>.
 
     This program is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself.

@@ -1,3 +1,12 @@
+[Changes for 0.28 - 24 Apr 2012]
+
+* modernize dist.
+
+* provide fetchMarketFile method. [clsung]
+
+* twe.com.tw -> twse.com.tw. [clsung]
+
+
 [Changes for 0.27 - 8 Jul 2007]
 
 * TSE changed to provide data in csv format. [ijliao]
