@@ -4,7 +4,6 @@ $VERSION = '0.27';
 
 use strict;
 use LWP::Simple ();
-eval { require 'Encode::compat' };
 use Encode 'from_to';
 use URI::Escape;
 use App::Cache;
