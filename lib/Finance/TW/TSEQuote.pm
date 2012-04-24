@@ -7,26 +7,39 @@ use LWP::Simple ();
 eval { require 'Encode::compat' };
 use Encode 'from_to';
 use URI::Escape;
+use App::Cache;
+use Digest::MD5 qw(md5_hex);
 
 sub resolve {
     my $self = shift if ref($_[0]) eq __PACKAGE__;
     shift if $_[0] eq __PACKAGE__;
     my $name = shift;
+    $self->{cache} ||= App::Cache->new({ ttl => 7*24*60*60 }); # a week
+    my $cache = $self->{cache};
+    my $key = md5_hex($name);
 
-    from_to($name, 'utf-8', 'big5');
+    unless ($cache->get($key)) {
+        my $url = "http://brk.twse.com.tw:8000/isin/C_public.jsp?strMode=2";
+        my $content = $cache->get_url($url);
 
-    $name = uri_escape($name);
-
-#    my $content = LWP::Simple::get("http://mops.tse.com.tw/server-java/t05st49_1?step=1&kinds=sii&colorchg=1&type=01&nick_name=$name");
-    my $content = LWP::Simple::get("http://mops.twse.com.tw/mops/web/ajax_quickpgm?encodeURIComponent=1&firstin=true&step=4&checkbtn=1&queryName=co_id&TYPEK2=&code1=&keyword4=$name");
-
-    my ($id, $fullname, $engname) = $content =~ m|<td>(\d+)&nbsp;</td><td>(.*?)&nbsp;</td><td>(.*?)&nbsp;</td></tr>|;
+        from_to($content, 'big5', 'utf-8');
+        use HTML::TableExtract;
+        my $te = HTML::TableExtract->new( headers => [qw(證券代號及名稱 上市日)] );
+        $te->parse($content);
+        foreach my $ts ($te->tables) {
+            foreach my $row ($ts->rows) {
+                my ($symbol, $company) = $row->[0] =~ m|(\S+)\s+\xe3\x80\x80(.*?)$|o;
+                next unless $symbol;
+                my $board_date = $row->[1];
+                $cache->set(md5_hex($company), {id => $symbol, date => $board_date});
+            }
+        }
+    }
+    my $id = $cache->get($key)->{id};
 
     die "can't resolve symbol: $name" unless $id;
 
-    from_to($fullname, 'big5', 'utf-8');
-
-    @{$self}{qw/id fullname engname/} = ($id, $fullname, $engname);
+    @{$self}{qw/id/} = ($id);
 
     return $id;
 
@@ -166,6 +179,11 @@ symbol, as well as getting the real time quote.
 =item resolve
 
     Resolve the company name to stock symbol.
+
+=item fetchMarketFile
+
+    Fetch the Een-Of-Day stock information for specific company
+	by year and month.
 
 =item get
 
