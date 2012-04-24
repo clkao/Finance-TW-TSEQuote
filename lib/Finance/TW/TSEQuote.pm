@@ -10,8 +10,8 @@ use App::Cache;
 use Digest::MD5 qw(md5_hex);
 
 sub resolve {
-    my $self = shift if ref($_[0]) eq __PACKAGE__;
-    shift if $_[0] eq __PACKAGE__;
+    my $self = shift;
+    $self = bless {}, __PACKAGE__ unless ref($self) eq __PACKAGE__;
     my $name = shift;
     $self->{cache} ||= App::Cache->new({ ttl => 7*24*60*60 }); # a week
     my $cache = $self->{cache};
@@ -99,8 +99,7 @@ sub get {
 }
 
 sub fetchMarketFile{
-    my $self = shift if ref($_[0]) eq __PACKAGE__;
-    shift if $_[0] eq __PACKAGE__;
+	my $self = shift;
 	my($stock, $year, $month) = @_;
 	my @fields = ();
 	my ($i, $url, $file, $arg, $outfile);
